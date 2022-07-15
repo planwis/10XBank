@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using SafeMathUpgradeable for uint256;
-  
+
   /// @dev events
   event Deposit(address _accountAddress, uint256 _amount);
   event Withdraw(address _accountAddress, uint256 _amount);
@@ -30,7 +30,10 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   uint256 private totalPlatformFee;
   IERC20Upgradeable public erc20Token;
 
-  function intialize(uint256 _transferFee, address _erc20Token) external initializer {
+  function initialize(uint256 _transferFee, address _erc20Token)
+    external
+    initializer
+  {
     OwnableUpgradeable.__Ownable_init();
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
 
@@ -92,12 +95,9 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       revert TenXBank_NotEnoughBalance();
 
     balanceOf[srcAccountAddress][_srcAccountName] -= _amount;
-    
     uint256 fee = (_amount * transferFee) / 1e18;
     totalPlatformFee += fee;
-
     balanceOf[destAccountAddress][_destAccountName] += _amount - fee;
-
   }
 
   // withdrawPlatformFee
@@ -108,7 +108,6 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     totalPlatformFee -= _amount;
 
     erc20Token.safeTransfer(msg.sender, _amount);
-
   }
 
   // crate account
