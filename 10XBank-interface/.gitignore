@@ -1,5 +1,2 @@
 node_modules
 .env
-typechain
-typechain-types
-compiled-typechain
