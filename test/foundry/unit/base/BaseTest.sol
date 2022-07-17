@@ -8,7 +8,7 @@ abstract contract BaseTest is Test {
   address public constant ALICE = address(1);
   address public constant BOB = address(2);
   address public constant CATHY = address(3);
-  address public constant EVE = address(4);
+  address public constant DRAKE = address(4);
 
   ProxyAdmin internal proxyAdmin;
 

@@ -12,7 +12,7 @@ abstract contract TenXBankBaseTest is BaseTest {
 
   /// @dev Foundry's setUp method
   function setUp() public virtual {
-    usdt = _setupFakeERC20("Tether", "USDT");
+    usdt = _setupFakeERC20("Tether", "USDT", 6);
 
     // 1 percent of 1e18 is 1e16
     tenXBank = _setupTenXBank(1e16, address(usdt));
@@ -39,18 +39,20 @@ abstract contract TenXBankBaseTest is BaseTest {
     return TenXBank(payable(_proxy));
   }
 
-  function _setupFakeERC20(string memory _name, string memory _symbol)
-    internal
-    returns (MockERC20)
-  {
+  function _setupFakeERC20(
+    string memory _name,
+    string memory _symbol,
+    uint8 _decimals
+  ) internal returns (MockERC20) {
     MockERC20 _impl = new MockERC20();
     TransparentUpgradeableProxy _proxy = new TransparentUpgradeableProxy(
       address(_impl),
       address(proxyAdmin),
       abi.encodeWithSelector(
-        bytes4(keccak256("initialize(string,string)")),
+        bytes4(keccak256("initialize(string,string,uint8)")),
         _name,
-        _symbol
+        _symbol,
+        _decimals
       )
     );
     return MockERC20(payable(_proxy));

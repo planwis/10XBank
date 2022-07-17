@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.8.14;
+pragma solidity 0.8.14;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -15,19 +15,22 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @dev events
   event Deposit(address _accountAddress, uint256 _amount);
   event Withdraw(address _accountAddress, uint256 _amount);
+  event Transfer(address _src, address _dest, uint256 _amount);
 
   /// @dev custom errors
   error TenXBank_TransferFeeGreaterThanOneHundredPercent();
   error TenXBank_InvalidERC20Address();
   error TenXBank_NonExistentAccount();
+  error TenXBank_NotTheOwnerOfAccount();
   error TenXBank_InvalidPlatformFeeWithdrawalAmount();
   error TenXBank_NotEnoughBalance();
+  error TenXBank_AccountNameAlreadyExists();
 
   mapping(string => address) public owners;
   mapping(address => mapping(string => uint256)) public balanceOf;
   mapping(address => string[]) private accounts;
   uint256 public transferFee;
-  uint256 private totalPlatformFee;
+  uint256 public totalPlatformFee;
   IERC20Upgradeable public erc20Token;
 
   function initialize(uint256 _transferFee, address _erc20Token)
@@ -46,7 +49,6 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     erc20Token = IERC20Upgradeable(_erc20Token);
   }
 
-  // deposit safetranserfrom
   function deposit(string calldata _accountName, uint256 _amount)
     external
     nonReentrant
@@ -62,7 +64,6 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     emit Deposit(accountAddress, _amount);
   }
 
-  // withdraw
   function withdraw(string calldata _accountName, uint256 _amount)
     external
     nonReentrant
@@ -70,6 +71,7 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address accountAddress = owners[_accountName];
 
     if (accountAddress == address(0)) revert TenXBank_NonExistentAccount();
+    if (accountAddress != msg.sender) revert TenXBank_NotTheOwnerOfAccount();
     if (_amount > balanceOf[msg.sender][_accountName])
       revert TenXBank_NotEnoughBalance();
 
@@ -80,8 +82,7 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     emit Withdraw(accountAddress, _amount);
   }
 
-  // tranfer
-  function tranfer(
+  function transfer(
     string calldata _srcAccountName,
     string calldata _destAccountName,
     uint256 _amount
@@ -91,6 +92,7 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
     if (srcAccountAddress == address(0) || destAccountAddress == address(0))
       revert TenXBank_NonExistentAccount();
+    if (srcAccountAddress != msg.sender) revert TenXBank_NotTheOwnerOfAccount();
     if (_amount > balanceOf[msg.sender][_srcAccountName])
       revert TenXBank_NotEnoughBalance();
 
@@ -98,11 +100,12 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     uint256 fee = (_amount * transferFee) / 1e18;
     totalPlatformFee += fee;
     balanceOf[destAccountAddress][_destAccountName] += _amount - fee;
+
+    emit Transfer(srcAccountAddress, destAccountAddress, _amount - fee);
   }
 
-  // withdrawPlatformFee
   function withdrawPlatformFee(uint256 _amount) external onlyOwner {
-    if (_amount < 0 || _amount > totalPlatformFee)
+    if (_amount > totalPlatformFee)
       revert TenXBank_InvalidPlatformFeeWithdrawalAmount();
 
     totalPlatformFee -= _amount;
@@ -110,8 +113,9 @@ contract TenXBank is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     erc20Token.safeTransfer(msg.sender, _amount);
   }
 
-  // crate account
-  function crateAccount(string calldata _accountName) external {
+  function createAccount(string calldata _accountName) external {
+    if (owners[_accountName] != address(0))
+      revert TenXBank_AccountNameAlreadyExists();
     owners[_accountName] = msg.sender;
     accounts[msg.sender].push(_accountName);
   }
