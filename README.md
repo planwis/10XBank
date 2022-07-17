@@ -1,6 +1,6 @@
 # Readme
 **For 10XBank contract**
-1. install foundry
+1. install foundry (https://book.getfoundry.sh/getting-started/installation)
 2. run `yarn`
 3. run `yarn test:foundry` for unit testing
 
